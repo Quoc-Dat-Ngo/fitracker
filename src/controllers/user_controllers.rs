@@ -1,25 +1,14 @@
 use actix_web::{HttpResponse, web};
 use crate::models::user::{NewUser, UpdateUser, User};
 use crate::db::connection::establish_connection;
+use crate::services::user_services::create_user;
 use diesel::prelude::*;
 
-pub async fn create_user(body: web::Json<NewUser>) -> HttpResponse {
-    println!("Creating new user: {:?}", body);
-    use crate::schema::users::dsl::*;
-
-    let mut connection = establish_connection();
-
-    let new_user = NewUser {
-        email: body.email.clone(),
-        password: body.password.clone(),
-    };
-
-    diesel::insert_into(users)
-        .values(&new_user)
-        .execute(&mut connection)
-        .expect("Error saving new user");
-
-    HttpResponse::Created().json(new_user)
+pub async fn create_user_controller(body: web::Json<NewUser>) -> HttpResponse {
+    match create_user(body.into_inner()).await {
+        Ok(user) => HttpResponse::Created().json(user),
+        Err(e) => HttpResponse::InternalServerError().finish(),
+    }
 }
 
 pub async fn update_user(id: web::Path<i32>, body: web::Json<UpdateUser>) -> HttpResponse {
