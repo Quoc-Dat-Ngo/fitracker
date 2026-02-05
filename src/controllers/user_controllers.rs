@@ -4,9 +4,10 @@ use crate::dtos::CreateUserRequest;
 use crate::errors::AppError;
 use crate::models::user::{UpdateUser, User};
 use crate::repositories::user_repositories::UserRepository;
-use crate::services::user_services::create_user;
+use crate::services::user_services::{create_user, get_all_users};
 use actix_web::{HttpResponse, web};
 use diesel::prelude::*;
+use serde_json::json;
 
 pub async fn create_user_controller(
     body: web::Json<CreateUserRequest>,
@@ -14,7 +15,10 @@ pub async fn create_user_controller(
     repo: web::Data<dyn UserRepository>,
 ) -> Result<HttpResponse, AppError> {
     let user = create_user(body.into_inner(), pool, repo).await?;
-    Ok(HttpResponse::Created().json(user))
+    Ok(HttpResponse::Created().json(json!({
+        "success": true,
+        "data": user,
+    })))
 }
 
 pub async fn update_user(id: web::Path<i32>, body: web::Json<UpdateUser>) -> HttpResponse {
@@ -37,17 +41,12 @@ pub async fn update_user(id: web::Path<i32>, body: web::Json<UpdateUser>) -> Htt
     HttpResponse::Ok().json(update)
 }
 
-pub async fn get_all_users() -> HttpResponse {
-    println!("Showing all users");
-    use crate::schema::users::dsl::*;
-
-    let mut connection = establish_connection();
-
-    let users_list: Vec<User> = users
-        .load::<User>(&mut connection)
-        .expect("Error loading users");
-
-    HttpResponse::Ok().json(users_list)
+pub async fn get_all_users_controller(pool: web::Data<DbPool>, repo: web::Data<dyn UserRepository>) -> Result<HttpResponse, AppError> {
+    let users = get_all_users(pool, repo).await?;
+    Ok(HttpResponse::Ok().json(json!({
+        "success": true,
+        "data": users,
+    })))
 }
 
 pub async fn get_user(id: web::Path<i32>) -> HttpResponse {

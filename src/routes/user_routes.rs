@@ -1,5 +1,5 @@
 use crate::controllers::user_controllers::{
-    create_user_controller, get_all_users, get_user, update_user,
+    create_user_controller, get_all_users_controller, get_user, update_user,
 };
 use actix_web::web;
 
@@ -8,7 +8,7 @@ pub fn init(cfg: &mut web::ServiceConfig) {
         web::scope("/users")
             .service(
                 web::resource("")
-                    .get(get_all_users)
+                    .get(get_all_users_controller)
                     .post(create_user_controller),
             )
             .service(web::resource("/{id}").get(get_user).patch(update_user)),

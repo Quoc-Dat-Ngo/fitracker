@@ -36,3 +36,18 @@ pub async fn create_user(
     .await?
     // .map_err(|e| e)
 }
+
+pub async fn get_all_users(pool: web::Data<DbPool>, repo: web::Data<dyn UserRepository>) -> Result<Vec<User>, AppError> {
+    let pool = pool.clone();
+    let repo = repo.clone();
+
+    web::block(move || -> Result<Vec<User>, AppError> {
+        let mut conn = pool
+            .get()
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        repo.get_all(&mut conn).map_err(AppError::from)
+    })
+    .await?
+
+}

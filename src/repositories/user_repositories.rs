@@ -1,5 +1,5 @@
 use crate::models::user::{NewUser, User};
-use crate::schema::users::dsl::*;
+use crate::schema::users::dsl::{users};
 use diesel::prelude::*;
 
 pub trait UserRepository: Send + Sync {
@@ -8,6 +8,8 @@ pub trait UserRepository: Send + Sync {
         new_user: NewUser,
         conn: &mut PgConnection,
     ) -> Result<User, diesel::result::Error>;
+
+    fn get_all(&self, conn: &mut PgConnection) -> Result<Vec<User>, diesel::result::Error>;
 }
 
 pub struct DieselUserRepository;
@@ -22,4 +24,9 @@ impl UserRepository for DieselUserRepository {
             .values(&new_user)
             .get_result::<User>(conn)
     }
+
+    fn get_all(&self, conn: &mut PgConnection) -> Result<Vec<User>, diesel::result::Error> {
+        users::load(users, conn)
+    }
+
 }
