@@ -1,20 +1,26 @@
-use actix_web::{HttpResponse, web};
-use crate::models::user::{NewUser, UpdateUser, User};
 use crate::db::connection::establish_connection;
+use crate::db::pool::DbPool;
+use crate::dtos::CreateUserRequest;
+use crate::errors::AppError;
+use crate::models::user::{UpdateUser, User};
+use crate::repositories::user_repositories::UserRepository;
 use crate::services::user_services::create_user;
+use actix_web::{HttpResponse, web};
 use diesel::prelude::*;
 
-pub async fn create_user_controller(body: web::Json<NewUser>) -> HttpResponse {
-    match create_user(body.into_inner()).await {
-        Ok(user) => HttpResponse::Created().json(user),
-        Err(e) => HttpResponse::InternalServerError().finish(),
-    }
+pub async fn create_user_controller(
+    body: web::Json<CreateUserRequest>,
+    pool: web::Data<DbPool>,
+    repo: web::Data<dyn UserRepository>,
+) -> Result<HttpResponse, AppError> {
+    let user = create_user(body.into_inner(), pool, repo).await?;
+    Ok(HttpResponse::Created().json(user))
 }
 
 pub async fn update_user(id: web::Path<i32>, body: web::Json<UpdateUser>) -> HttpResponse {
     println!("Update user with id: {:?}", id);
     use crate::schema::users::dsl::*;
-    
+
     let id = id.into_inner();
     let mut connection = establish_connection();
 
@@ -46,9 +52,9 @@ pub async fn get_all_users() -> HttpResponse {
 
 pub async fn get_user(id: web::Path<i32>) -> HttpResponse {
     println!("Showing user with given id {:?}", id);
-    
+
     use crate::schema::users::dsl::*;
-    
+
     let id = id.into_inner();
     let mut connection = establish_connection();
 
