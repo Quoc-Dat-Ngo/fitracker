@@ -1,19 +1,25 @@
-use diesel::prelude::*;
+use crate::models::user::{NewUser, User};
 use crate::schema::users::dsl::*;
-use crate::db::connection::establish_connection;
-use crate::models::user::{User, NewUser, UpdateUser};
-use crate::errors::AppError;
+use diesel::prelude::*;
 
-pub struct UserRepository;
+pub trait UserRepository: Send + Sync {
+    fn create(
+        &self,
+        new_user: NewUser,
+        conn: &mut PgConnection,
+    ) -> Result<User, diesel::result::Error>;
+}
 
-impl UserRepository {
-    pub fn create(new_user: &NewUser) -> Result<User, AppError> {
-        let mut conn = establish_connection();
+pub struct DieselUserRepository;
 
+impl UserRepository for DieselUserRepository {
+    fn create(
+        &self,
+        new_user: NewUser,
+        conn: &mut PgConnection,
+    ) -> Result<User, diesel::result::Error> {
         diesel::insert_into(users)
-            .values(new_user)
-            .get_result::<User>(&mut conn)
-            .map_err(AppError::from)
+            .values(&new_user)
+            .get_result::<User>(conn)
     }
-
 }
