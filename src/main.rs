@@ -19,6 +19,7 @@ use crate::{
     routes::user_routes::init,
 };
 use actix_web::{App, HttpResponse, HttpServer, web};
+use serde_json::json;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -37,7 +38,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::scope("/api/v1").configure(init))
             .route(
                 "/",
-                web::get().to(|| async { HttpResponse::Ok().json("Server is alive, hooray!") }),
+                web::get().to(|| async { HttpResponse::Ok().json(json!({ "message": "Server is alive, hooray!"})) }),
             )
     })
     .bind(("127.0.0.1", port))?
