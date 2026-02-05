@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::schema::users;
+use serde::{Deserialize, Serialize};
 
 #[derive(Insertable, Debug, Serialize, Deserialize)]
 #[diesel(table_name = users)]
@@ -21,4 +21,3 @@ pub struct User {
     pub email: String,
     pub password: String,
 }
-
