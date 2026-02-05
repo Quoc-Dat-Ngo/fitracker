@@ -1,31 +1,35 @@
-use std::fmt;
-use std::error::Error;
-use actix_web::App;
-use diesel::result::Error as DieselError;
+use actix_web::{HttpResponse, ResponseError, http::StatusCode};
+use serde_json::json;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum AppError {
-    DatabaseError(DieselError),
+    #[error("Database error: {0}")]
+    DatabaseError(String),
+
+    #[error("Validation error: {0}")]
     ValidationError(String),
-    NotFoundError(String),
-    UnknownError(String),
+
+    #[error("Internal error: {0}")]
+    InternalError(String),
+
+    #[error("Database query failed: {0}")]
+    DieselError(#[from] diesel::result::Error),
+
+    #[error("Thread pool failed: {0}")]
+    BlockingError(#[from] actix_web::error::BlockingError),
 }
 
-impl fmt::Display for AppError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+// Implement ResponseError manually to control the HTTP status codes
+impl ResponseError for AppError {
+    fn status_code(&self) -> actix_web::http::StatusCode {
         match self {
-            AppError::DatabaseError(e) => write!(f, "Database error: {}", e),
-            AppError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
-            AppError::NotFoundError(msg) => write!(f, "NotFound error: {}", msg),
-            AppError::UnknownError(msg) => write!(f, "Unknown error: {}", msg),
+            AppError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
-}
 
-impl Error for AppError {}
-
-impl From<DieselError> for AppError {
-    fn from(err: DieselError) -> Self {
-        AppError::DatabaseError(err)
+    fn error_response(&self) -> actix_web::HttpResponse<actix_web::body::BoxBody> {
+        HttpResponse::build(self.status_code()).json(json!({"message": self.to_string()}))
     }
 }
